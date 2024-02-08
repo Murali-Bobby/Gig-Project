@@ -1,7 +1,7 @@
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-Future<int> sendDataToBackend(String? taskName, String? taskDescription) async {
+Future<int> sendDataToBackend(String? taskName, String? taskDescription, String? latitude, String? longitude) async {
   try {
     final response = await http.post(
       Uri.parse('http://localhost:8080/api/tasks'), 
@@ -11,6 +11,8 @@ Future<int> sendDataToBackend(String? taskName, String? taskDescription) async {
       body: jsonEncode({
         'taskName': taskName,
         'taskDescription': taskDescription,
+        'latitude' : latitude,
+        'longitude' :longitude,
       }),
     );
 

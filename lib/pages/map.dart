@@ -21,12 +21,31 @@ class _MapState extends State<Map> {
           leading: IconButton(
             icon: Icon(Icons.arrow_back),
             onPressed: () {
-              Navigator.of(context).pop();
+              // widget.onLocationSelected(tappedLocation);
+
+              Navigator.of(context).pop(tappedLocation);
             },
           ),
-          title: Text('Map Page'),
+          title: Text('Please select the location'),
         ),
-        
+
+
+        // ElevatedButton(
+        //   onPressed: () {}, 
+        //   child: Text("Confirm Location")
+        //   ),
+
+        floatingActionButton: FloatingActionButton(
+            mini: false,
+            onPressed: (){
+              Navigator.of(context).pop(tappedLocation);
+            },
+            child: Container(
+              padding: EdgeInsets.all(10.0), // Adjust padding to change size
+              child: Icon(Icons.check),
+            ),
+          ),
+
         body: Center(
           child:  Container(
             child: Column(
@@ -37,7 +56,7 @@ class _MapState extends State<Map> {
                     MapOptions( 
                       onTap: _handleTap ,  
                       initialCenter: LatLng(12.96332605743105, 80.24484447724926), 
-                      initialZoom: 8),
+                      initialZoom: 10),
                     children :[
                       TileLayer(
                         urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',

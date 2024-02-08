@@ -6,6 +6,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:gig_project/services/apiService.dart';
 import 'package:gig_project/pages/map.dart';
+import 'package:latlong2/latlong.dart';
 
 class Chat extends StatefulWidget {
   const Chat({Key? key}) : super(key: key);
@@ -22,7 +23,9 @@ class _ChatState extends State<Chat> {
   bool taskCreationStarted = false;
   String? _taskName;
   String? _taskDescription;
-
+  bool isFileUploaded = false;
+  bool isLocationSelected = false;
+  FilePickerResult? result;
   @override
   void initState() {
     super.initState();
@@ -35,16 +38,26 @@ class _ChatState extends State<Chat> {
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.only(left: 10.0),
-          child: GestureDetector(
-            onTap: () {
+          child: ElevatedButton(
+            onPressed: () {
               Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => Map()),
               );
             },
-            child: CircleAvatar(
-              child: Icon(Icons.location_on),
-              radius: 20.0,
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              shape: CircleBorder(),
+              primary: Colors.white,
+            ),
+            child: Ink(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Icon(Icons.location_on),
+              ),
             ),
           ),
         ),
@@ -52,18 +65,35 @@ class _ChatState extends State<Chat> {
           Padding(
             padding: const EdgeInsets.only(right: 10.0),
             child: ElevatedButton(
-              onPressed: () async {
-                FilePickerResult? result = await FilePicker.platform.pickFiles();
+            onPressed: () async {
+                result = await FilePicker.platform.pickFiles();
 
                 if (result != null) {
-                  PlatformFile file = result.files.first;
+                  PlatformFile file = result!.files.first;
                   print("File Name: ${file.name}");
+                  setState(() {
+                    isFileUploaded = true;
+                  });
+
                 } else {
                   // User canceled the file picker
                 }
               },
-              child: Icon(Icons.upload),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.zero,
+              shape: CircleBorder(),
+              primary: Colors.white,
             ),
+            child: Ink(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Icon(Icons.upload, color: isFileUploaded ? Colors.green : null),
+              ),
+            ),
+          ),
           ),
         ],
         title: const Text("Task Creator", style: TextStyle(color: Colors.white)),
@@ -89,7 +119,7 @@ class _ChatState extends State<Chat> {
     setState(() {
       _messages.insert(0, message);
     });
-    print("Input is recoreded : ${message.text}");
+    // print("Input is recoreded : ${message.text}");
 
     if(message.text.toLowerCase() == 'end'){
       _resetState();
@@ -110,11 +140,32 @@ class _ChatState extends State<Chat> {
           _sendMessage("Please provide a description for the task '$_taskName'");
         } else if (_taskDescription == null) {
           _taskDescription = message.text;
-          _createTask();
+          // _sendMessage("Please select the location on the map. You can access the map using the navigation button present in the top left cornor");
+          
+          Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => Map(),
+              ),
+            ).then((selectedLocation) {
+              if (selectedLocation != null) {
+                // Handle the selected location received from the map screen
+                _handleSelectedLocation(selectedLocation);
+              }
+            });
+
+          // _createTask();
         }
       }
     }
   }
+
+  _handleSelectedLocation(LatLng selectedLocation) {
+    print("Latitude: ${selectedLocation.latitude}, Longitude: ${selectedLocation.longitude}, Task Name: $_taskName, Task Description: $_taskDescription");
+  // _sendMessage("Latitude: ${selectedLocation.latitude}, Longitude: ${selectedLocation.longitude}, Task Name: $_taskName, Task Description: $_taskDescription");
+  _createTask(selectedLocation);
+ 
+}
 
   void _startTaskCreation() {
     setState(() {
@@ -125,10 +176,10 @@ class _ChatState extends State<Chat> {
     _sendMessage("Type the name of the task:");
   }
 
-  Future<void> _createTask() async {
-    int result = await sendDataToBackend(_taskName, _taskDescription);
+  Future<void> _createTask(LatLng selectedLocation) async {
+    int result = await sendDataToBackend(_taskName, _taskDescription, selectedLocation.latitude.toString(), selectedLocation.longitude.toString());
     if (result == 1) {
-      _sendMessage("Task created successfully:\nName: $_taskName\nDescription: $_taskDescription");
+      _sendMessage("Task created successfully:\nName: $_taskName\nDescription: $_taskDescription\nLatitude:${selectedLocation.latitude.toString()}\nLongitude${selectedLocation.longitude.toString()}");
       _sendMessage("Type 'new task' to create another task or type 'end' to complete the task creation process.");
       _resetState();
     } else {
