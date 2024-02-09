@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:gig_project/services/apiService.dart';
 import 'package:gig_project/pages/map.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:http/http.dart' as http;
 
 class Chat extends StatefulWidget {
   const Chat({Key? key}) : super(key: key);
@@ -36,6 +37,8 @@ class _ChatState extends State<Chat> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        elevation: 5.0,
+        shadowColor: Colors.black,
         leading: Padding(
           padding: const EdgeInsets.only(left: 10.0),
           child: ElevatedButton(
@@ -47,15 +50,15 @@ class _ChatState extends State<Chat> {
             },
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.zero,
-              shape: CircleBorder(),
+              shape: const CircleBorder(),
               primary: Colors.white,
             ),
             child: Ink(
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(10.0),
+              child: const Padding(
+                padding: EdgeInsets.all(10.0),
                 child: Icon(Icons.location_on),
               ),
             ),
@@ -71,9 +74,18 @@ class _ChatState extends State<Chat> {
                 if (result != null) {
                   PlatformFile file = result!.files.first;
                   print("File Name: ${file.name}");
+                  print("File Size: ${file.size}");
+                  
+
                   setState(() {
                     isFileUploaded = true;
                   });
+
+                  if(_taskName!=null && _taskDescription!=null && isLocationSelected ==true){
+                   
+                  }
+
+                  // uploadFileToBackend();
 
                 } else {
                   // User canceled the file picker
@@ -81,8 +93,8 @@ class _ChatState extends State<Chat> {
               },
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.zero,
-              shape: CircleBorder(),
-              primary: Colors.white,
+              shape: const CircleBorder(),
+              backgroundColor: Colors.white,
             ),
             child: Ink(
               decoration: const BoxDecoration(
@@ -151,6 +163,9 @@ class _ChatState extends State<Chat> {
               if (selectedLocation != null) {
                 // Handle the selected location received from the map screen
                 _handleSelectedLocation(selectedLocation);
+                setState(() {
+                  isLocationSelected = true;
+                });
               }
             });
 
@@ -177,9 +192,18 @@ class _ChatState extends State<Chat> {
   }
 
   Future<void> _createTask(LatLng selectedLocation) async {
-    int result = await sendDataToBackend(_taskName, _taskDescription, selectedLocation.latitude.toString(), selectedLocation.longitude.toString());
-    if (result == 1) {
-      _sendMessage("Task created successfully:\nName: $_taskName\nDescription: $_taskDescription\nLatitude:${selectedLocation.latitude.toString()}\nLongitude${selectedLocation.longitude.toString()}");
+    // ignore: unnecessary_null_comparison
+    int queryresult=0;
+    if(result!=null){
+      List<int>? fileBytes = result!.files.first.bytes;
+      queryresult = await sendDataToBackend(_taskName, _taskDescription, selectedLocation.latitude.toString(), selectedLocation.longitude.toString(), fileBytes);
+    }else{
+       _sendMessage("Please attach a file to complete the task creation process. You can attach a by clicking the top right button");
+    }
+  
+    
+    if (queryresult == 1) {
+      _sendMessage("Task created successfully:\nName: $_taskName\nDescription: $_taskDescription\nLatitude: ${selectedLocation.latitude.toString()}\nLongitude: ${selectedLocation.longitude.toString()}\nFileName: ${result!.files.first.name}");
       _sendMessage("Type 'new task' to create another task or type 'end' to complete the task creation process.");
       _resetState();
     } else {
@@ -187,8 +211,7 @@ class _ChatState extends State<Chat> {
       _taskName = null;
       _taskDescription = null;
       _startTaskCreation();
-    }
-    
+    }  
   }
 
   void _sendMessage(String text) {

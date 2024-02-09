@@ -1,21 +1,22 @@
+import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
 
-Future<int> sendDataToBackend(String? taskName, String? taskDescription, String? latitude, String? longitude) async {
+Future<int> sendDataToBackend(String? taskName, String? taskDescription, String? latitude, String? longitude, List<int>? fileBytes) async {
   try {
-    final response = await http.post(
-      Uri.parse('http://localhost:8080/api/tasks'), 
-      headers: <String, String>{
-        'Content-Type': 'application/json; charset=UTF-8',
-      },
-      body: jsonEncode({
-        'taskName': taskName,
-        'taskDescription': taskDescription,
-        'latitude' : latitude,
-        'longitude' :longitude,
-      }),
-    );
+    var request = http.MultipartRequest('POST', Uri.parse('http://localhost:8080/api/tasks'));
+    
+    // Add task details as fields
+    request.fields['taskName'] = taskName!;
+    request.fields['taskDescription'] = taskDescription!;
+    request.fields['latitude'] = latitude!;
+    request.fields['longitude'] = longitude!;
+    
+    // Add file as a multipart file
+    request.files.add(http.MultipartFile.fromBytes('file', fileBytes!, filename: 'filename.txt'));
 
+    var response = await request.send();
+    
     if (response.statusCode == 200) {
       print('Data sent to backend successfully!');
       return 1;
@@ -25,7 +26,6 @@ Future<int> sendDataToBackend(String? taskName, String? taskDescription, String?
     }
   } catch (e) {
     print('Error sending data to backend: $e');
+    return 0;
   }  
-
-  return 0;  
 }
